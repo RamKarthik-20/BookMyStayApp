@@ -1,42 +1,68 @@
-public class BookMyStayApp {
-    // Inventory Class (Centralized State Management)
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
-    class RoomInventory {
-        private Map<String, Integer> availabilityMap;
+// Centralized Inventory
+class RoomInventory {
 
-        // Constructor - initialize inventory
-        public RoomInventory() {
-            availabilityMap = new HashMap<>();
+    private Map<String, Integer> availability;
 
-            // Register room types with counts
-            availabilityMap.put("Single Room", 5);
-            availabilityMap.put("Double Room", 3);
-            availabilityMap.put("Suite Room", 2);
+    // Initialize inventory
+    public RoomInventory() {
+        availability = new HashMap<>();
+        availability.put("Single Room", 5);
+        availability.put("Double Room", 3);
+        availability.put("Suite Room", 2);
+    }
+
+    // Get availability (O(1))
+    public int getAvailability(String roomType) {
+        return availability.getOrDefault(roomType, 0);
+    }
+
+    // Update availability (controlled)
+    public void updateAvailability(String roomType, int count) {
+        if (availability.containsKey(roomType)) {
+            availability.put(roomType, count);
+        } else {
+            System.out.println("Invalid room type: " + roomType);
         }
+    }
 
-        // Get availability
-        public int getAvailability(String roomType) {
-            return availabilityMap.getOrDefault(roomType, 0);
-        }
+    // Add new room type (scalable)
+    public void addRoomType(String roomType, int count) {
+        availability.put(roomType, count);
+    }
 
-        // Update availability (controlled)
-        public void updateAvailability(String roomType, int newCount) {
-            if (availabilityMap.containsKey(roomType)) {
-                availabilityMap.put(roomType, newCount);
-            } else {
-                System.out.println("Room type not found!");
-            }
+    // Display inventory
+    public void displayInventory() {
+        System.out.println("=== Room Inventory ===");
+        for (Map.Entry<String, Integer> entry : availability.entrySet()) {
+            System.out.println(entry.getKey() + " -> Available: " + entry.getValue());
         }
+        System.out.println("----------------------");
+    }
+}
 
-        // Display full inventory
-        public void displayInventory() {
-            System.out.println("=== Room Inventory ===");
-            for (Map.Entry<String, Integer> entry : availabilityMap.entrySet()) {
-                System.out.println(entry.getKey() + " -> Available: " + entry.getValue());
-            }
-            System.out.println("----------------------");
-        }
+// Main
+public class HotelApp {
+    public static void main(String[] args) {
+
+        // Initialize centralized inventory
+        RoomInventory inventory = new RoomInventory();
+
+        // Display initial state
+        inventory.displayInventory();
+
+        // Retrieve availability
+        System.out.println("Single Room Available: " +
+                inventory.getAvailability("Single Room"));
+
+        // Update availability
+        inventory.updateAvailability("Single Room", 4);
+
+        // Add new room type (scalability demo)
+        inventory.addRoomType("Deluxe Room", 2);
+
+        // Display updated state
+        inventory.displayInventory();
     }
 }

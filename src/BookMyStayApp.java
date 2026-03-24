@@ -106,6 +106,27 @@ import java.util.*;
             }
             System.out.println("------------------------");
         }
+
+        System.out.println("------------------------");
+    }
+}
+
+// Main
+public class HotelApp {
+    public static void main(String[] args) {
+
+        RoomInventory inventory = new RoomInventory();
+
+        List<Room> rooms = new ArrayList<>();
+        rooms.add(new SingleRoom());
+        rooms.add(new DoubleRoom());
+        rooms.add(new SuiteRoom());
+
+        RoomSearchService searchService =
+                new RoomSearchService(inventory);
+
+        // Guest searches rooms
+        searchService.search(rooms);
     }
 
     // Persistence Service

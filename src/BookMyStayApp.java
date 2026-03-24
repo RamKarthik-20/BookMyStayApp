@@ -1,92 +1,151 @@
-public class BookMyStayApp {
-    import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
-    class BookingService {
+// Reservation (Request)
+class Reservation {
+    private String guestName;
+    private String roomType;
 
-        private RoomInventory inventory;
-        private BookingQueue bookingQueue;
+    public Reservation(String guestName, String roomType) {
+        this.guestName = guestName;
+        this.roomType = roomType;
+    }
 
-        // Map: RoomType -> Set of allocated Room IDs
-        private Map<String, Set<String>> allocatedRooms;
+    public String getGuestName() { return guestName; }
+    public String getRoomType() { return roomType; }
+}
 
-        // Global set to ensure uniqueness
-        private Set<String> allRoomIds;
+// Inventory (State Holder)
+class RoomInventory {
+    private Map<String, Integer> availability = new HashMap<>();
 
-        private int idCounter = 1;
+    public RoomInventory() {
+        availability.put("Single Room", 2);
+        availability.put("Double Room", 2);
+        availability.put("Suite Room", 1);
+    }
 
-        public BookingService(RoomInventory inventory, BookingQueue bookingQueue) {
-            this.inventory = inventory;
-            this.bookingQueue = bookingQueue;
-            this.allocatedRooms = new HashMap<>();
-            this.allRoomIds = new HashSet<>();
+    public int getAvailability(String type) {
+        return availability.getOrDefault(type, 0);
+    }
+
+    public void updateAvailability(String type, int count) {
+        availability.put(type, count);
+    }
+
+    public void display() {
+        System.out.println("=== Inventory ===");
+        for (Map.Entry<String, Integer> e : availability.entrySet()) {
+            System.out.println(e.getKey() + " -> " + e.getValue());
         }
+        System.out.println("------------------");
+    }
+}
 
-        // Process all requests (FIFO)
-        public void processBookings() {
-            System.out.println("=== Processing Bookings ===");
+// Booking Queue (FIFO)
+class BookingQueue {
+    private Queue<Reservation> queue = new LinkedList<>();
 
-            Reservation request;
+    public void addRequest(Reservation r) {
+        queue.offer(r);
+    }
 
-            while ((request = bookingQueue.peekNext()) != null) {
+    public Reservation pollRequest() {
+        return queue.poll();
+    }
+}
 
-                // remove from queue
-                request = bookingQueue.pollRequest();
+// Booking Service (Safe Allocation)
+class BookingService {
 
-                String type = request.getRoomType();
-                int available = inventory.getAvailability(type);
+    private RoomInventory inventory;
+    private BookingQueue queue;
 
-                if (available > 0) {
+    // Track allocated IDs
+    private Set<String> allRoomIds = new HashSet<>();
 
-                    // Generate unique room ID
-                    String roomId = generateRoomId(type);
+    // Track per room type
+    private Map<String, Set<String>> allocatedRooms = new HashMap<>();
 
-                    // Ensure uniqueness
-                    while (allRoomIds.contains(roomId)) {
-                        roomId = generateRoomId(type);
-                    }
+    private int idCounter = 1;
 
-                    // Store globally
-                    allRoomIds.add(roomId);
+    public BookingService(RoomInventory inventory, BookingQueue queue) {
+        this.inventory = inventory;
+        this.queue = queue;
+    }
 
-                    // Store per room type
-                    allocatedRooms
-                            .computeIfAbsent(type, k -> new HashSet<>())
-                            .add(roomId);
+    public void processBookings() {
+        System.out.println("=== Processing Bookings ===");
 
-                    // Update inventory immediately
-                    inventory.updateAvailability(type, available - 1);
+        Reservation req;
 
-                    // Confirm booking
-                    System.out.println("Booking Confirmed → "
-                            + request.getGuestName()
-                            + " | " + type
-                            + " | Room ID: " + roomId);
+        while ((req = queue.pollRequest()) != null) {
 
-                } else {
-                    System.out.println("Booking Failed (No Availability) → "
-                            + request.getGuestName()
-                            + " | " + type);
+            String type = req.getRoomType();
+            int available = inventory.getAvailability(type);
+
+            if (available > 0) {
+
+                // Generate unique ID
+                String roomId = generateRoomId(type);
+
+                while (allRoomIds.contains(roomId)) {
+                    roomId = generateRoomId(type);
                 }
+
+                // Store globally
+                allRoomIds.add(roomId);
+
+                // Store per type
+                allocatedRooms
+                        .computeIfAbsent(type, k -> new HashSet<>())
+                        .add(roomId);
+
+                // Update inventory
+                inventory.updateAvailability(type, available - 1);
+
+                System.out.println("Confirmed: " + req.getGuestName()
+                        + " | " + type
+                        + " | ID: " + roomId);
+
+            } else {
+                System.out.println("Failed (No Rooms): " + req.getGuestName()
+                        + " | " + type);
             }
-
-            System.out.println("----------------------------");
         }
 
-        // Generate ID
-        private String generateRoomId(String type) {
-            return type.replaceAll(" ", "").substring(0, 2).toUpperCase() + idCounter++;
-        }
+        System.out.println("----------------------------");
+    }
 
-        // View allocations
-        public void displayAllocations() {
-            System.out.println("=== Allocated Rooms ===");
-            for (Map.Entry<String, Set<String>> entry : allocatedRooms.entrySet()) {
-                System.out.println(entry.getKey() + " -> " + entry.getValue());
-            }
-            System.out.println("------------------------");
+    private String generateRoomId(String type) {
+        return type.substring(0, 2).toUpperCase() + idCounter++;
+    }
+
+    public void displayAllocations() {
+        System.out.println("=== Allocated Rooms ===");
+        for (Map.Entry<String, Set<String>> e : allocatedRooms.entrySet()) {
+            System.out.println(e.getKey() + " -> " + e.getValue());
         }
+        System.out.println("------------------------");
+    }
+}
+
+// Main
+public class HotelApp {
+    public static void main(String[] args) {
+
+        RoomInventory inventory = new RoomInventory();
+        BookingQueue queue = new BookingQueue();
+
+        // Requests (FIFO)
+        queue.addRequest(new Reservation("Ram", "Single Room"));
+        queue.addRequest(new Reservation("Arun", "Single Room"));
+        queue.addRequest(new Reservation("Priya", "Suite Room"));
+        queue.addRequest(new Reservation("John", "Suite Room")); // should fail
+
+        BookingService service = new BookingService(inventory, queue);
+
+        service.processBookings();
+        service.displayAllocations();
+        inventory.display();
     }
 }

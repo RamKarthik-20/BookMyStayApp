@@ -1,29 +1,23 @@
 public class BookMyStayApp {
-    import java.util.List;
+    class Reservation {
+        private String guestName;
+        private String roomType;
 
-    class RoomSearchService {
-
-        private RoomInventory inventory;
-
-        public RoomSearchService(RoomInventory inventory) {
-            this.inventory = inventory;
+        public Reservation(String guestName, String roomType) {
+            this.guestName = guestName;
+            this.roomType = roomType;
         }
 
-        // Read-only search
-        public void searchAvailableRooms(List<Room> rooms) {
-            System.out.println("=== Available Rooms ===");
+        public String getGuestName() {
+            return guestName;
+        }
 
-            for (Room room : rooms) {
-                String type = room.getRoomType();
-                int available = inventory.getAvailability(type);
+        public String getRoomType() {
+            return roomType;
+        }
 
-                // Defensive check: only show available rooms
-                if (available > 0) {
-                    room.displayDetails(available);
-                }
-            }
-
-            System.out.println("------------------------");
+        public void display() {
+            System.out.println("Guest: " + guestName + " | Room: " + roomType);
         }
     }
 }
